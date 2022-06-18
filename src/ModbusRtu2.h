@@ -143,8 +143,6 @@ const unsigned char fctsupported[] =
     MB_FC_WRITE_MULTIPLE_REGISTERS
 };
 
-#define T35  5
-#define  MAX_BUFFER  64	//!< maximum size for the communication buffer in bytes
 
 /**
  * @class Modbus
@@ -154,6 +152,9 @@ const unsigned char fctsupported[] =
  */
 class Modbus
 {
+public:
+    static const int T35 = 5;
+    static const int MAX_BUFFER = 64;	//!< maximum size for the communication buffer in bytes
 private:
     Stream *port; //!< Pointer to Stream class object (Either HardwareSerial or SoftwareSerial)
     uint8_t u8id; //!< 0=master, 1..247=slave number
