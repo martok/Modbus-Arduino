@@ -62,53 +62,6 @@ Modbus::Modbus(uint8_t u8id, Stream& port, uint8_t u8txenpin)
 
 /**
  * @brief
- * DEPRECATED constructor for a Master/Slave.
- *
- * THIS CONSTRUCTOR IS ONLY PROVIDED FOR BACKWARDS COMPATIBILITY.
- * USE Modbus(uint8_t, T_Stream&, uint8_t) INSTEAD.
- *
- * @param u8id   node address 0=master, 1..247=slave
- * @param u8serno  serial port used 0..3 (ignored for software serial)
- * @param u8txenpin pin for txen RS-485 (=0 means USB/RS232C mode)
- * @ingroup setup
- * @overload Modbus::Modbus(uint8_t u8id, T_Stream& port, uint8_t u8txenpin)
- */
-Modbus::Modbus(uint8_t u8id, uint8_t u8serno, uint8_t u8txenpin)
-{
-    this->u8id = u8id;
-    this->u8txenpin = u8txenpin;
-    this->u16timeOut = 1000;
-    this->u32overTime = 0;
-
-    switch( u8serno )
-    {
-#if defined(UBRR1H)
-    case 1:
-        port = &Serial1;
-        break;
-#endif
-
-#if defined(UBRR2H)
-    case 2:
-        port = &Serial2;
-        break;
-#endif
-
-#if defined(UBRR3H)
-    case 3:
-        port = &Serial3;
-        break;
-#endif
-    case 0:
-    default:
-        port = &Serial;
-        break;
-    }
-}
-
-
-/**
- * @brief
  * Start-up class object.
  *
  * Call this AFTER calling begin() on the serial port, typically within setup().
@@ -130,67 +83,6 @@ void Modbus::start()
     while(port->read() >= 0);
     u8lastRec = u8BufferSize = 0;
     u16InCnt = u16OutCnt = u16errCnt = 0;
-}
-
-
-/**
- * @brief
- * DEPRECATED Install a serial port, begin() it, and start ModbusRtu.
- *
- * ONLY PROVIDED FOR BACKWARDS COMPATIBILITY.
- * USE Serial.begin(<baud rate>); FOLLOWED BY Modbus.start() INSTEAD.
- *
- * @param install_port pointer to SoftwareSerial or HardwareSerial class object
- * @param u32speed     baud rate, in standard increments (300..115200)
- * @ingroup setup
- */
-template<typename T_Stream>
-void Modbus::begin(T_Stream* install_port, long u32speed)
-{
-    port = install_port;
-    install_port->begin(u32speed);
-    start();
-}
-
-
-/**
- * @brief
- * DEPRECATED. Install a serial port, begin() it, and start ModbusRtu.
- *
- * ONLY PROVIDED FOR BACKWARDS COMPATIBILITY.
- * USE Serial.begin(<baud rate>); FOLLOWED BY Modbus.start() INSTEAD.
- *
- * @param install_port  pointer to SoftwareSerial or HardwareSerial class object
- * @param u32speed      baud rate, in standard increments (300..115200)
- * @param u8txenpin     pin for txen RS-485 (=0 means USB/RS232C mode)
- * @ingroup setup
- */
-template<typename T_Stream>
-void Modbus::begin(T_Stream* install_port, long u32speed, uint8_t u8txenpin)
-{
-    this->u8txenpin = u8txenpin;
-    this->port = install_port;
-    install_port->begin(u32speed);
-    start();
-}
-
-
-/**
- * @brief
- * DEPRECATED. begin() hardware serial port and start ModbusRtu.
- *
- * ONLY PROVIDED FOR BACKWARDS COMPATIBILITY.
- * USE Serial.begin(<baud rate>); FOLLOWED BY Modbus.start() INSTEAD.
- *
- * @see http://arduino.cc/en/Serial/Begin#.Uy4CJ6aKlHY
- * @param speed   baud rate, in standard increments (300..115200). Default=19200
- * @ingroup setup
- */
-void Modbus::begin(long u32speed)
-{
-    // !!Can ONLY do this if port ACTUALLY IS a HardwareSerial object!!
-    static_cast<HardwareSerial*>(port)->begin(u32speed);
-    start();
 }
 
 

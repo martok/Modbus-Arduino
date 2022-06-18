@@ -52,11 +52,9 @@ TODO List
 =================================================================
 Common to Master and Slave:
 
-1) Implement other Serial settings: parity, stop bits, ...
+1) Test it with several Arduino boards: UNO, Mega, etc..
 
-2) Test it with several Arduino boards: UNO, Mega, etc..
-
-3) Extend it to Leonardo
+2) Extend it to Leonardo
 
 New features by Helium6072 29 July 2016
 =================================================================
