@@ -54,19 +54,9 @@ Common to Master and Slave:
 
 1) Implement other Serial settings: parity, stop bits, ...
 
-2) End frame delay, also known as T35
+2) Test it with several Arduino boards: UNO, Mega, etc..
 
-3) Test it with several Arduino boards: UNO, Mega, etc..
-
-4) Extend it to Leonardo
-
-Master:
-
-1) Function code 1 and 2 still not implemented
-
-2) Function code 15 still not implement
-
-3) Other codes under development
+3) Extend it to Leonardo
 
 New features by Helium6072 29 July 2016
 =================================================================

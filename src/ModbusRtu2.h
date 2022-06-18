@@ -90,7 +90,7 @@ enum MESSAGE
  * Modbus function codes summary.
  * These are the implement function codes either for Master or for Slave.
  *
- * @see also fctsupported
+ * @see also Modbus::isFctSupported
  * @see also modbus_t
  */
 enum MB_FC
@@ -131,19 +131,6 @@ enum
     EXC_EXECUTE = 4
 };
 
-const unsigned char fctsupported[] =
-{
-    MB_FC_READ_COILS,
-    MB_FC_READ_DISCRETE_INPUT,
-    MB_FC_READ_REGISTERS,
-    MB_FC_READ_INPUT_REGISTER,
-    MB_FC_WRITE_COIL,
-    MB_FC_WRITE_REGISTER,
-    MB_FC_WRITE_MULTIPLE_COILS,
-    MB_FC_WRITE_MULTIPLE_REGISTERS
-};
-
-
 /**
  * @class Modbus
  * @brief
@@ -173,6 +160,7 @@ private:
     void sendTxBuffer();
     int8_t getRxBuffer();
     uint16_t calcCRC(uint8_t u8length);
+    bool isFctSupported(uint8_t fct);
     uint8_t validateAnswer();
     uint8_t validateRequest();
     void get_FC1();

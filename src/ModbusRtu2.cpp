@@ -717,6 +717,28 @@ uint16_t Modbus::calcCRC(uint8_t u8length)
 
 /**
  * @brief
+ * This method checks for supported function codes
+ *
+ * @return if fct is supported
+ */
+bool Modbus::isFctSupported(uint8_t fct)
+{
+    switch(fct) {
+        case MB_FC_READ_COILS:
+        case MB_FC_READ_DISCRETE_INPUT:
+        case MB_FC_READ_REGISTERS:
+        case MB_FC_READ_INPUT_REGISTER:
+        case MB_FC_WRITE_COIL:
+        case MB_FC_WRITE_REGISTER:
+        case MB_FC_WRITE_MULTIPLE_COILS:
+        case MB_FC_WRITE_MULTIPLE_REGISTERS:
+          return true;
+    }
+    return false;
+}
+
+/**
+ * @brief
  * This method validates slave incoming messages
  *
  * @return 0 if OK, EXCEPTION if anything fails
@@ -735,17 +757,7 @@ uint8_t Modbus::validateRequest()
     }
 
     // check fct code
-    boolean isSupported = false;
-    for (uint8_t i = 0; i< sizeof( fctsupported ); i++)
-    {
-        if (fctsupported[i] == au8Buffer[FUNC])
-        {
-            isSupported = 1;
-            break;
-        }
-    }
-    if (!isSupported)
-    {
+    if (!isFctSupported(au8Buffer[FUNC])) {
         u16errCnt ++;
         return EXC_FUNC_CODE;
     }
@@ -812,17 +824,7 @@ uint8_t Modbus::validateAnswer()
     }
 
     // check fct code
-    boolean isSupported = false;
-    for (uint8_t i = 0; i< sizeof( fctsupported ); i++)
-    {
-        if (fctsupported[i] == au8Buffer[FUNC])
-        {
-            isSupported = 1;
-            break;
-        }
-    }
-    if (!isSupported)
-    {
+    if (!isFctSupported(au8Buffer[FUNC])) {
         u16errCnt ++;
         return EXC_FUNC_CODE;
     }
