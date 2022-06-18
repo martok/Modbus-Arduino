@@ -101,6 +101,7 @@ void Modbus::setID( uint8_t u8id)
     }
 }
 
+
 /**
  * @brief
  * Method to write the overtime count for txend pin.
@@ -116,6 +117,7 @@ void Modbus::setTxendPinOverTime( uint32_t u32overTime )
     this->u32overTime = u32overTime;
 }
 
+
 /**
  * @brief
  * Method to read current slave ID address
@@ -127,6 +129,7 @@ uint8_t Modbus::getID()
 {
     return this->u8id;
 }
+
 
 /**
  * @brief
@@ -144,6 +147,7 @@ void Modbus::setTimeOut( uint16_t u16timeOut)
     this->u16timeOut = u16timeOut;
 }
 
+
 /**
  * @brief
  * Return communication Watchdog state.
@@ -156,6 +160,7 @@ boolean Modbus::getTimeOutState()
 {
     return ((unsigned long)(millis() -u32timeOut) > (unsigned long)u16timeOut);
 }
+
 
 /**
  * @brief
@@ -170,6 +175,7 @@ uint16_t Modbus::getInCnt()
     return u16InCnt;
 }
 
+
 /**
  * @brief
  * Get transmitted messages counter value
@@ -182,6 +188,7 @@ uint16_t Modbus::getOutCnt()
 {
     return u16OutCnt;
 }
+
 
 /**
  * @brief
@@ -196,6 +203,7 @@ uint16_t Modbus::getErrCnt()
     return u16errCnt;
 }
 
+
 /**
  * Get modbus master state
  *
@@ -206,6 +214,7 @@ uint8_t Modbus::getState()
 {
     return u8state;
 }
+
 
 /**
  * Get the last error in the protocol processor
@@ -220,6 +229,7 @@ uint8_t Modbus::getLastError()
 {
     return u8lastError;
 }
+
 
 /**
  * @brief
@@ -292,7 +302,7 @@ int8_t Modbus::query( modbus_t telegram )
             else
             {
                 au8Buffer[ u8BufferSize ] = highByte( au16regs[ i/2] );
-            }          
+            }
             u8BufferSize++;
         }
         break;
@@ -318,6 +328,7 @@ int8_t Modbus::query( modbus_t telegram )
     u8lastError = 0;
     return 0;
 }
+
 
 /**
  * @brief *** Only for Modbus Master ***
@@ -402,6 +413,7 @@ int8_t Modbus::poll()
     return u8BufferSize;
 }
 
+
 /**
  * @brief
  * *** Only for Modbus Slave ***
@@ -417,15 +429,12 @@ int8_t Modbus::poll()
  */
 int8_t Modbus::poll( uint16_t *regs, uint8_t u8size )
 {
-
     au16regs = regs;
     u8regsize = u8size;
 	uint8_t u8current;
 
-
     // check if there is any incoming frame
     u8current = port->available();
-
     if (u8current == 0) return 0;
 
     // check T35 after frame end or still no frame end
@@ -492,6 +501,7 @@ int8_t Modbus::poll( uint16_t *regs, uint8_t u8size )
 
 /* _____PRIVATE FUNCTIONS_____________________________________________________ */
 
+
 /**
  * @brief
  * This method moves Serial buffer data to the Modbus au8Buffer.
@@ -522,6 +532,7 @@ int8_t Modbus::getRxBuffer()
     }
     return u8BufferSize;
 }
+
 
 /**
  * @brief
@@ -576,6 +587,7 @@ void Modbus::sendTxBuffer()
     u16OutCnt++;
 }
 
+
 /**
  * @brief
  * This method calculates CRC
@@ -607,6 +619,7 @@ uint16_t Modbus::calcCRC(uint8_t u8length)
     return temp;
 }
 
+
 /**
  * @brief
  * This method checks for supported function codes
@@ -628,6 +641,7 @@ bool Modbus::isFctSupported(uint8_t fct)
     }
     return false;
 }
+
 
 /**
  * @brief
@@ -689,6 +703,7 @@ uint8_t Modbus::validateRequest()
     return 0; // OK, no exception code thrown
 }
 
+
 /**
  * @brief
  * This method validates master incoming messages
@@ -724,6 +739,7 @@ uint8_t Modbus::validateAnswer()
     return 0; // OK, no exception code thrown
 }
 
+
 /**
  * @brief
  * This method builds an exception message
@@ -740,6 +756,7 @@ void Modbus::buildException( uint8_t u8exception )
     u8BufferSize         = EXCEPTION_SIZE;
 }
 
+
 /**
  * This method processes functions 1 & 2 (for master)
  * This method puts the slave answer into master data buffer
@@ -752,19 +769,18 @@ void Modbus::get_FC1()
     uint8_t u8byte, i;
     u8byte = 3;
      for (i=0; i< au8Buffer[2]; i++) {
-        
         if(i%2)
         {
             au16regs[i/2]= word(au8Buffer[i+u8byte], lowByte(au16regs[i/2]));
         }
         else
         {
-           
-            au16regs[i/2]= word(highByte(au16regs[i/2]), au8Buffer[i+u8byte]); 
+            au16regs[i/2]= word(highByte(au16regs[i/2]), au8Buffer[i+u8byte]);
         }
-        
+
      }
 }
+
 
 /**
  * This method processes functions 3 & 4 (for master)
@@ -785,6 +801,7 @@ void Modbus::get_FC3()
         u8byte += 2;
     }
 }
+
 
 /**
  * @brief
@@ -840,6 +857,7 @@ int8_t Modbus::process_FC1( uint16_t *regs, uint8_t /*u8size*/ )
     return u8CopyBufferSize;
 }
 
+
 /**
  * @brief
  * This method processes functions 3 & 4
@@ -850,7 +868,6 @@ int8_t Modbus::process_FC1( uint16_t *regs, uint8_t /*u8size*/ )
  */
 int8_t Modbus::process_FC3( uint16_t *regs, uint8_t /*u8size*/ )
 {
-
     uint8_t u8StartAdd = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ] );
     uint8_t u8regsno = word( au8Buffer[ NB_HI ], au8Buffer[ NB_LO ] );
     uint8_t u8CopyBufferSize;
@@ -871,6 +888,7 @@ int8_t Modbus::process_FC3( uint16_t *regs, uint8_t /*u8size*/ )
 
     return u8CopyBufferSize;
 }
+
 
 /**
  * @brief
@@ -896,7 +914,6 @@ int8_t Modbus::process_FC5( uint16_t *regs, uint8_t /*u8size*/ )
         u8currentBit,
         au8Buffer[ NB_HI ] == 0xff );
 
-
     // send answer to master
     u8BufferSize = 6;
     u8CopyBufferSize = u8BufferSize +2;
@@ -904,6 +921,7 @@ int8_t Modbus::process_FC5( uint16_t *regs, uint8_t /*u8size*/ )
 
     return u8CopyBufferSize;
 }
+
 
 /**
  * @brief
@@ -915,7 +933,6 @@ int8_t Modbus::process_FC5( uint16_t *regs, uint8_t /*u8size*/ )
  */
 int8_t Modbus::process_FC6( uint16_t *regs, uint8_t /*u8size*/ )
 {
-
     uint8_t u8add = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ] );
     uint8_t u8CopyBufferSize;
     uint16_t u16val = word( au8Buffer[ NB_HI ], au8Buffer[ NB_LO ] );
@@ -930,6 +947,7 @@ int8_t Modbus::process_FC6( uint16_t *regs, uint8_t /*u8size*/ )
 
     return u8CopyBufferSize;
 }
+
 
 /**
  * @brief
@@ -950,13 +968,11 @@ int8_t Modbus::process_FC15( uint16_t *regs, uint8_t /*u8size*/ )
     uint16_t u16StartCoil = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ] );
     uint16_t u16Coilno = word( au8Buffer[ NB_HI ], au8Buffer[ NB_LO ] );
 
-
     // read each coil from the register map and put its value inside the outcoming message
     u8bitsno = 0;
     u8frameByte = 7;
     for (u16currentCoil = 0; u16currentCoil < u16Coilno; u16currentCoil++)
     {
-
         u16coil = u16StartCoil + u16currentCoil;
         u8currentRegister = (uint8_t) (u16coil / 16);
         u8currentBit = (uint8_t) (u16coil % 16);
@@ -986,6 +1002,7 @@ int8_t Modbus::process_FC15( uint16_t *regs, uint8_t /*u8size*/ )
     sendTxBuffer();
     return u8CopyBufferSize;
 }
+
 
 /**
  * @brief

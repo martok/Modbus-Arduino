@@ -76,12 +76,12 @@ enum
 enum MESSAGE
 {
     ID                             = 0, //!< ID field
-    FUNC, //!< Function code position
-    ADD_HI, //!< Address high byte
-    ADD_LO, //!< Address low byte
-    NB_HI, //!< Number of coils or registers high byte
-    NB_LO, //!< Number of coils or registers low byte
-    BYTE_CNT  //!< byte counter
+    FUNC,                               //!< Function code position
+    ADD_HI,                             //!< Address high byte
+    ADD_LO,                             //!< Address low byte
+    NB_HI,                              //!< Number of coils or registers high byte
+    NB_LO,                              //!< Number of coils or registers low byte
+    BYTE_CNT                            //!< byte counter
 };
 
 /**
@@ -96,14 +96,14 @@ enum MESSAGE
 enum MB_FC
 {
     MB_FC_NONE                     = 0,   /*!< null operator */
-    MB_FC_READ_COILS               = 1,	/*!< FCT=1 -> read coils or digital outputs */
-    MB_FC_READ_DISCRETE_INPUT      = 2,	/*!< FCT=2 -> read digital inputs */
-    MB_FC_READ_REGISTERS           = 3,	/*!< FCT=3 -> read registers or analog outputs */
-    MB_FC_READ_INPUT_REGISTER      = 4,	/*!< FCT=4 -> read analog inputs */
-    MB_FC_WRITE_COIL               = 5,	/*!< FCT=5 -> write single coil or output */
-    MB_FC_WRITE_REGISTER           = 6,	/*!< FCT=6 -> write single register */
-    MB_FC_WRITE_MULTIPLE_COILS     = 15,	/*!< FCT=15 -> write multiple coils or outputs */
-    MB_FC_WRITE_MULTIPLE_REGISTERS = 16	/*!< FCT=16 -> write multiple registers */
+    MB_FC_READ_COILS               = 1,	  /*!< FCT=1 -> read coils or digital outputs */
+    MB_FC_READ_DISCRETE_INPUT      = 2,	  /*!< FCT=2 -> read digital inputs */
+    MB_FC_READ_REGISTERS           = 3,	  /*!< FCT=3 -> read registers or analog outputs */
+    MB_FC_READ_INPUT_REGISTER      = 4,	  /*!< FCT=4 -> read analog inputs */
+    MB_FC_WRITE_COIL               = 5,	  /*!< FCT=5 -> write single coil or output */
+    MB_FC_WRITE_REGISTER           = 6,	  /*!< FCT=6 -> write single register */
+    MB_FC_WRITE_MULTIPLE_COILS     = 15,  /*!< FCT=15 -> write multiple coils or outputs */
+    MB_FC_WRITE_MULTIPLE_REGISTERS = 16	  /*!< FCT=16 -> write multiple registers */
 };
 
 enum COM_STATES
