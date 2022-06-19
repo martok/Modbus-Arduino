@@ -81,7 +81,8 @@ enum MESSAGE
     ADD_LO,                             //!< Address low byte
     NB_HI,                              //!< Number of coils or registers high byte
     NB_LO,                              //!< Number of coils or registers low byte
-    BYTE_CNT                            //!< byte counter
+    BYTE_CNT,                           //!< byte counter
+    RESP_CNT                       = 2  //!< Number of coils or registers returned
 };
 
 /**
@@ -125,10 +126,10 @@ enum ERR_LIST
 enum
 {
     NO_REPLY = 255,
-    EXC_FUNC_CODE = 1,
-    EXC_ADDR_RANGE = 2,
-    EXC_REGS_QUANT = 3,
-    EXC_EXECUTE = 4
+    EXC_FUNC_CODE = 1,                    /*!< ILLEGAL FUNCTION */
+    EXC_ADDR_RANGE = 2,                   /*!< ILLEGAL DATA ADDRESS */
+    EXC_REGS_QUANT = 3,                   /*!< ILLEGAL DATA VALUE */
+    EXC_EXECUTE = 4                       /*!< SERVER DEVICE FAILURE */
 };
 
 /**
@@ -160,11 +161,10 @@ private:
     void sendTxBuffer();
     int8_t getRxBuffer();
     uint16_t calcCRC(uint8_t u8length);
+    void putBuffer16(uint8_t hiAddr, uint16_t value) { au8Buffer[hiAddr] = highByte(value); au8Buffer[hiAddr+1] = lowByte(value); } ;
     bool isFctSupported(uint8_t fct);
     uint8_t validateAnswer();
     uint8_t validateRequest();
-    void get_FC1();
-    void get_FC3();
     int8_t process_FC1( uint16_t *regs, uint8_t u8size );
     int8_t process_FC3( uint16_t *regs, uint8_t u8size );
     int8_t process_FC5( uint16_t *regs, uint8_t u8size );

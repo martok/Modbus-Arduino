@@ -256,8 +256,7 @@ int8_t Modbus::query( modbus_t telegram )
     // telegram header
     au8Buffer[ ID ]         = telegram.u8id;
     au8Buffer[ FUNC ]       = telegram.u8fct;
-    au8Buffer[ ADD_HI ]     = highByte(telegram.u16RegAdd );
-    au8Buffer[ ADD_LO ]     = lowByte( telegram.u16RegAdd );
+    putBuffer16(ADD_HI,     telegram.u16RegAdd);
 
     switch( telegram.u8fct )
     {
@@ -265,21 +264,18 @@ int8_t Modbus::query( modbus_t telegram )
     case MB_FC_READ_DISCRETE_INPUT:
     case MB_FC_READ_REGISTERS:
     case MB_FC_READ_INPUT_REGISTER:
-        au8Buffer[ NB_HI ]      = highByte(telegram.u16CoilsNo );
-        au8Buffer[ NB_LO ]      = lowByte( telegram.u16CoilsNo );
+        putBuffer16(NB_HI, telegram.u16CoilsNo);
         u8BufferSize = 6;
         break;
     case MB_FC_WRITE_COIL:
-        au8Buffer[ NB_HI ]      = ((au16regs[0] > 0) ? 0xff : 0);
-        au8Buffer[ NB_LO ]      = 0;
+        putBuffer16(NB_HI, (au16regs[0] > 0) ? 0xff00 : 0x0000);
         u8BufferSize = 6;
         break;
     case MB_FC_WRITE_REGISTER:
-        au8Buffer[ NB_HI ]      = highByte(au16regs[0]);
-        au8Buffer[ NB_LO ]      = lowByte(au16regs[0]);
+        putBuffer16(NB_HI, au16regs[0]);
         u8BufferSize = 6;
         break;
-    case MB_FC_WRITE_MULTIPLE_COILS: // TODO: implement "sending coils"
+    case MB_FC_WRITE_MULTIPLE_COILS:
         u8regsno = telegram.u16CoilsNo / 16;
         u8bytesno = u8regsno * 2;
         if ((telegram.u16CoilsNo % 16) != 0)
@@ -288,14 +284,17 @@ int8_t Modbus::query( modbus_t telegram )
             u8regsno++;
         }
 
-        au8Buffer[ NB_HI ]      = highByte(telegram.u16CoilsNo );
-        au8Buffer[ NB_LO ]      = lowByte( telegram.u16CoilsNo );
-        au8Buffer[ BYTE_CNT ]    = u8bytesno;
+        putBuffer16(NB_HI, telegram.u16CoilsNo);
+        au8Buffer[ BYTE_CNT ] = u8bytesno;
         u8BufferSize = 7;
 
+        // for convenience, input regs are taken as native bit order, but transmit must be mixed
+        //   The request data contents are two bytes: CD 01 hex (1100 1101 0000 0001 binary). The binary bits correspond to the outputs in the following way:
+        //   Bit:     1  1  0  0  1  1  0  1  0  0  0  0  0  0  0  1
+        //   Output: 27 26 25 24 23 22 21 20  -  -  -  -  -  - 29 28
         for (uint16_t i = 0; i < u8bytesno; i++)
         {
-            if(i%2)
+            if(i%2 == 0)
             {
                 au8Buffer[ u8BufferSize ] = lowByte( au16regs[ i/2 ] );
             }
@@ -308,17 +307,14 @@ int8_t Modbus::query( modbus_t telegram )
         break;
 
     case MB_FC_WRITE_MULTIPLE_REGISTERS:
-        au8Buffer[ NB_HI ]      = highByte(telegram.u16CoilsNo );
-        au8Buffer[ NB_LO ]      = lowByte( telegram.u16CoilsNo );
+        putBuffer16(NB_HI, telegram.u16CoilsNo);
         au8Buffer[ BYTE_CNT ]    = (uint8_t) ( telegram.u16CoilsNo * 2 );
         u8BufferSize = 7;
 
         for (uint16_t i=0; i< telegram.u16CoilsNo; i++)
         {
-            au8Buffer[ u8BufferSize ] = highByte( au16regs[ i ] );
-            u8BufferSize++;
-            au8Buffer[ u8BufferSize ] = lowByte( au16regs[ i ] );
-            u8BufferSize++;
+            putBuffer16(u8BufferSize, au16regs[ i ]);
+            u8BufferSize += 2;
         }
         break;
     }
@@ -347,7 +343,7 @@ int8_t Modbus::query( modbus_t telegram )
 int8_t Modbus::poll()
 {
     // check if there is any incoming frame
-	uint8_t u8current;
+	uint8_t u8current, u8byte;
     u8current = port->available();
 
     if ((unsigned long)(millis() -u32timeOut) > (unsigned long)u16timeOut)
@@ -392,13 +388,31 @@ int8_t Modbus::poll()
     {
     case MB_FC_READ_COILS:
     case MB_FC_READ_DISCRETE_INPUT:
-        // call get_FC1 to transfer the incoming message to au16regs buffer
-        get_FC1( );
+        u8byte = RESP_CNT + 1;
+        // transfer to output buffer and flip byte order, see explanation in Modbus::query above
+        for (uint8_t i=0; i<au8Buffer[RESP_CNT]; i++)
+        {
+            if(i%2 == 0)
+            {
+                // also clear high byte, will be filled in from the next byte if there are more
+                au16regs[i/2] = word(0, au8Buffer[i+u8byte]);
+            }
+            else
+            {
+                au16regs[i/2] = word(au8Buffer[i+u8byte], lowByte(au16regs[i/2]));
+            }
+        }
         break;
     case MB_FC_READ_INPUT_REGISTER:
     case MB_FC_READ_REGISTERS :
-        // call get_FC3 to transfer the incoming message to au16regs buffer
-        get_FC3( );
+        // transfer to output buffer
+        u8byte = RESP_CNT + 1;
+
+        for (uint8_t i=0; i< au8Buffer[ RESP_CNT ] /2; i++)
+        {
+            au16regs[ i ] = word(au8Buffer[ u8byte ], au8Buffer[ u8byte +1 ]);
+            u8byte += 2;
+        }
         break;
     case MB_FC_WRITE_COIL:
     case MB_FC_WRITE_REGISTER :
@@ -550,10 +564,8 @@ void Modbus::sendTxBuffer()
 {
     // append CRC to message
     uint16_t u16crc = calcCRC( u8BufferSize );
-    au8Buffer[ u8BufferSize ] = u16crc >> 8;
-    u8BufferSize++;
-    au8Buffer[ u8BufferSize ] = u16crc & 0x00ff;
-    u8BufferSize++;
+    putBuffer16(u8BufferSize, u16crc);
+    u8BufferSize += 2;
 
     if (u8txenpin > 1)
     {
@@ -677,7 +689,7 @@ uint8_t Modbus::validateRequest()
     case MB_FC_READ_DISCRETE_INPUT:
     case MB_FC_WRITE_MULTIPLE_COILS:
         u16regs = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ]) / 16;
-        u16regs += word( au8Buffer[ NB_HI ], au8Buffer[ NB_LO ]) /16;
+        u16regs += word( au8Buffer[ NB_HI ], au8Buffer[ NB_LO ]) / 16;
         u8regs = (uint8_t) u16regs;
         if (u8regs > u8regsize) return EXC_ADDR_RANGE;
         break;
@@ -758,52 +770,6 @@ void Modbus::buildException( uint8_t u8exception )
 
 
 /**
- * This method processes functions 1 & 2 (for master)
- * This method puts the slave answer into master data buffer
- *
- * @ingroup register
- * TODO: finish its implementation
- */
-void Modbus::get_FC1()
-{
-    uint8_t u8byte, i;
-    u8byte = 3;
-     for (i=0; i< au8Buffer[2]; i++) {
-        if(i%2)
-        {
-            au16regs[i/2]= word(au8Buffer[i+u8byte], lowByte(au16regs[i/2]));
-        }
-        else
-        {
-            au16regs[i/2]= word(highByte(au16regs[i/2]), au8Buffer[i+u8byte]);
-        }
-
-     }
-}
-
-
-/**
- * This method processes functions 3 & 4 (for master)
- * This method puts the slave answer into master data buffer
- *
- * @ingroup register
- */
-void Modbus::get_FC3()
-{
-    uint8_t u8byte, i;
-    u8byte = 3;
-
-    for (i=0; i< au8Buffer[ 2 ] /2; i++)
-    {
-        au16regs[ i ] = word(
-                            au8Buffer[ u8byte ],
-                            au8Buffer[ u8byte +1 ]);
-        u8byte += 2;
-    }
-}
-
-
-/**
  * @brief
  * This method processes functions 1 & 2
  * This method reads a bit array and transfers it to the master
@@ -828,9 +794,8 @@ int8_t Modbus::process_FC1( uint16_t *regs, uint8_t /*u8size*/ )
     u8BufferSize         = ADD_LO;
     au8Buffer[ u8BufferSize + u8bytesno - 1 ] = 0;
 
-    // read each coil from the register map and put its value inside the outcoming message
+    // read each coil from the register map and put its value inside the outcoming message, flipping byte order
     u8bitsno = 0;
-
     for (u16currentCoil = 0; u16currentCoil < u16Coilno; u16currentCoil++)
     {
         u16coil = u16StartCoil + u16currentCoil;
@@ -878,10 +843,8 @@ int8_t Modbus::process_FC3( uint16_t *regs, uint8_t /*u8size*/ )
 
     for (i = u8StartAdd; i < u8StartAdd + u8regsno; i++)
     {
-        au8Buffer[ u8BufferSize ] = highByte(regs[i]);
-        u8BufferSize++;
-        au8Buffer[ u8BufferSize ] = lowByte(regs[i]);
-        u8BufferSize++;
+        putBuffer16(u8BufferSize, regs[i]);
+        u8BufferSize+=2;
     }
     u8CopyBufferSize = u8BufferSize +2;
     sendTxBuffer();
@@ -962,13 +925,12 @@ int8_t Modbus::process_FC15( uint16_t *regs, uint8_t /*u8size*/ )
     uint8_t u8currentRegister, u8currentBit, u8frameByte, u8bitsno;
     uint8_t u8CopyBufferSize;
     uint16_t u16currentCoil, u16coil;
-    boolean bTemp;
 
     // get the first and last coil from the message
     uint16_t u16StartCoil = word( au8Buffer[ ADD_HI ], au8Buffer[ ADD_LO ] );
     uint16_t u16Coilno = word( au8Buffer[ NB_HI ], au8Buffer[ NB_LO ] );
 
-    // read each coil from the register map and put its value inside the outcoming message
+    // read each coil from the incoming message and put its value in the register map, flip byte order while reading
     u8bitsno = 0;
     u8frameByte = 7;
     for (u16currentCoil = 0; u16currentCoil < u16Coilno; u16currentCoil++)
@@ -977,14 +939,10 @@ int8_t Modbus::process_FC15( uint16_t *regs, uint8_t /*u8size*/ )
         u8currentRegister = (uint8_t) (u16coil / 16);
         u8currentBit = (uint8_t) (u16coil % 16);
 
-        bTemp = bitRead(
-                    au8Buffer[ u8frameByte ],
-                    u8bitsno );
-
         bitWrite(
             regs[ u8currentRegister ],
             u8currentBit,
-            bTemp );
+            bitRead(au8Buffer[ u8frameByte ], u8bitsno ));
 
         u8bitsno ++;
 
@@ -1017,22 +975,18 @@ int8_t Modbus::process_FC16( uint16_t *regs, uint8_t /*u8size*/ )
     uint8_t u8StartAdd = au8Buffer[ ADD_HI ] << 8 | au8Buffer[ ADD_LO ];
     uint8_t u8regsno = au8Buffer[ NB_HI ] << 8 | au8Buffer[ NB_LO ];
     uint8_t u8CopyBufferSize;
-    uint8_t i;
-    uint16_t temp;
+    uint8_t u8byte, i;
 
     // build header
-    au8Buffer[ NB_HI ]   = 0;
-    au8Buffer[ NB_LO ]   = u8regsno;
-    u8BufferSize         = RESPONSE_SIZE;
+    putBuffer16(NB_HI, u8regsno);
+    u8BufferSize = RESPONSE_SIZE;
 
     // write registers
+    u8byte = BYTE_CNT + 1;
     for (i = 0; i < u8regsno; i++)
     {
-        temp = word(
-                   au8Buffer[ (BYTE_CNT + 1) + i * 2 ],
-                   au8Buffer[ (BYTE_CNT + 2) + i * 2 ]);
-
-        regs[ u8StartAdd + i ] = temp;
+        regs[ u8StartAdd + i ] = word(au8Buffer[ u8byte ], au8Buffer[ u8byte+ 1 ]);
+        u8byte += 2;
     }
     u8CopyBufferSize = u8BufferSize +2;
     sendTxBuffer();
